@@ -1,4 +1,6 @@
 from __future__ import with_statement
+import copy
+from cms.api import create_page, create_title
 from cms.models.pagemodel import Page, Placeholder
 from cms.templatetags.cms_tags import (get_site_id, _get_page_by_untyped_arg,
         _show_placeholder_for_page)
@@ -13,6 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django.template import RequestContext
 from unittest import TestCase
+from django.template.base import Template
 
 
 class TemplatetagTests(TestCase):
@@ -122,3 +125,44 @@ class TemplatetagDatabaseTests(TwoPagesFixture, SettingsOverrideTestCase):
         content = _show_placeholder_for_page(RequestContext(request),
                                             'does_not_exist', 'myreverseid')
         self.assertEqual(content['content'], '')
+
+    def test_untranslated_language_url(self):
+        """ Tests page_language_url templatetag behavior when used on a page
+          without the requested translation, both when CMS_HIDE_UNTRANSLATED is
+          True and False.
+          When True it should return the root page URL if the current page is
+           untranslated (PR #1125)
+
+        """
+        page_1 = create_page('Page 1', 'nav_playground.html', 'en', published=True,
+                             in_navigation=True, reverse_id='page1')
+        create_title("de", "Seite 1", page_1, slug="seite-1")
+        page_2 = create_page('Page 2', 'nav_playground.html', 'en',  page_1, published=True,
+                             in_navigation=True, reverse_id='page2')
+        create_title("de", "Seite 2", page_2, slug="seite-2")
+        page_3 = create_page('Page 3', 'nav_playground.html', 'en',  page_2, published=True,
+                             in_navigation=True, reverse_id='page3')
+        tpl = Template("{% load menu_tags %}{% page_language_url 'de' %}")
+        lang_settings = copy.deepcopy(settings.CMS_LANGUAGES)
+        lang_settings[1][1]['hide_untranslated'] = False
+        with SettingsOverride(CMS_LANGUAGES=lang_settings):
+            context = self.get_context(page_2.get_absolute_url())
+            context['request'].current_page = page_2
+            res = tpl.render(context)
+            self.assertEqual(res,"/de/seite-2/")
+
+            context = self.get_context(page_3.get_absolute_url())
+            context['request'].current_page = page_3
+            res = tpl.render(context)
+            self.assertEqual(res,"/de/page-3/")
+        lang_settings[1][1]['hide_untranslated'] = True
+        with SettingsOverride(CMS_LANGUAGES=lang_settings):
+            context = self.get_context(page_2.get_absolute_url())
+            context['request'].current_page = page_2
+            res = tpl.render(context)
+            self.assertEqual(res,"/de/seite-2/")
+
+            context = self.get_context(page_3.get_absolute_url())
+            context['request'].current_page = page_3
+            res = tpl.render(context)
+            self.assertEqual(res,"/de/")

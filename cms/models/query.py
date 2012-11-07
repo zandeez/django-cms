@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from cms.publisher.query import PublisherQuerySet
 from django.conf import settings
 from cms.exceptions import NoHomeFound
+from cms.utils import timezone
 
 #from cms.utils.urlutils import levelize_path
 
@@ -17,17 +18,17 @@ class PageQuerySet(PublisherQuerySet):
             except Site.DoesNotExist:
                 site = None
         return self.filter(site=site)
-        
+
     def root(self):
         """
         Return a queryset with pages that don't have parents, a.k.a. root. For
         current site - used in frontend
         """
         return self.on_site().filter(parent__isnull=True)
-    
+
     def all_root(self):
         """
-        Return a queryset with pages that don't have parents, a.k.a. root. For 
+        Return a queryset with pages that don't have parents, a.k.a. root. For
         all sites - used in frontend
         """
         return self.filter(parent__isnull=True)
@@ -53,13 +54,13 @@ class PageQuerySet(PublisherQuerySet):
 
         if settings.CMS_SHOW_START_DATE:
             pub = pub.filter(
-                Q(publication_date__lt=datetime.now()) |
+                Q(publication_date__lt=timezone.now()) |
                 Q(publication_date__isnull=True)
             )
-        
+
         if settings.CMS_SHOW_END_DATE:
             pub = pub.filter(
-                Q(publication_end_date__gte=datetime.now()) |
+                Q(publication_end_date__gte=timezone.now()) |
                 Q(publication_end_date__isnull=True)
             )
 
@@ -67,9 +68,9 @@ class PageQuerySet(PublisherQuerySet):
 
     def expired(self):
         return self.on_site().filter(
-            publication_end_date__lte=datetime.now())
-            
-#    - seems this is not used anymore...  
+            publication_end_date__lte=timezone.now())
+
+#    - seems this is not used anymore...
 #    def get_pages_with_application(self, path, language):
 #        """Returns all pages containing application for current path, or
 #        any parrent. Returned list is sorted by path length, longer path first.
@@ -83,17 +84,17 @@ class PageQuerySet(PublisherQuerySet):
 #        # add proper ordering
 #        app_pages.query.order_by.extend(('LENGTH(`cms_title`.`path`) DESC',))
 #        return app_pages
-    
+
     def get_all_pages_with_application(self):
         """Returns all pages containing applications for all sites.
-        
-        Doesn't cares about the application language. 
+
+        Doesn't cares about the application language.
         """
         return self.published().filter(title_set__application_urls__gt='').distinct()
-    
+
     def get_home(self, site=None):
         try:
             home = self.published(site).all_root().order_by("tree_id")[0]
         except IndexError:
-            raise  NoHomeFound('No Root page found. Publish at least one page!')
+            raise NoHomeFound('No Root page found. Publish at least one page!')
         return home

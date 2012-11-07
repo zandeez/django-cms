@@ -9,6 +9,29 @@ Welcome to django CMS's documentation!
 
 This document refers to version |release|
 
+*******
+Install
+*******
+
+.. warning::
+    In version 2.4 migrations have been completely rewritten to fix issues
+    with newer south releases.
+    If upgrading from prior 2.3.2 releases, please refer to
+    :ref:`migrations-upgrade`
+
+
+.. toctree::
+    :maxdepth: 1
+
+    getting_started/installation
+    upgrade/2.4
+    upgrade/2.3.3
+    upgrade/2.3.2
+    upgrade/2.3
+    upgrade/2.2
+    upgrade/2.1
+
+
 ***************
 Getting Started
 ***************
@@ -17,8 +40,6 @@ Getting Started
     :maxdepth: 2
     :numbered:
 
-    getting_started/installation
-    upgrade/index
     getting_started/tutorial
     getting_started/using_south
     getting_started/configuration
@@ -39,6 +60,7 @@ Advanced
     advanced/sitemap
     advanced/templatetags
     advanced/cli
+    advanced/permissions_reference
 
 
 *****************
@@ -56,6 +78,19 @@ Extending the CMS
     extending_cms/placeholders
     extending_cms/searchdocs
     extending_cms/fields
+
+
+********
+Concepts
+********
+
+.. toctree::
+    :maxdepth: 2
+    :numbered:
+
+    concepts/introduction
+    concepts/menu_system
+    concepts/multiple_languages
 
 
 **************************

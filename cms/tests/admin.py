@@ -19,7 +19,6 @@ from cms.test_utils.testcases import (CMSTestCase, URL_CMS_PAGE_DELETE,
     URL_CMS_PAGE, URL_CMS_TRANSLATION_DELETE)
 from cms.test_utils.util.context_managers import SettingsOverride
 from cms.test_utils.util.mock import AttributeObject
-from cms.test_utils.util.request_factory import RequestFactory
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.sites import site
@@ -29,7 +28,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import (Http404, HttpResponseBadRequest, HttpResponseForbidden, 
     HttpResponse)
-from django.test.client import Client
+from django.test.client import Client, RequestFactory
 from django.utils.encoding import smart_str
 from menus.menu_pool import menu_pool
 from types import MethodType
@@ -370,6 +369,37 @@ class AdminTestCase(AdminTestsBase):
         self.assertEqual(root_page.get_children()[1], second_level_page_bottom)
         self.assertEqual(root_page.get_children()[0].get_children()[0], third_level_page)
 
+    def test_changelist_tree(self):
+        """ This test checks for proper jstree cookie unquoting.
+
+        It should be converted to a selenium test to actually test the jstree behaviour.
+        Cookie set below is just a forged example (from live session)
+        """
+        admin = self._get_guys(True)
+        first_level_page = create_page('level1',  'nav_playground.html', 'en')
+        second_level_page_top = create_page('level21', "nav_playground.html", "en",
+                            created_by=admin, published=True, parent= first_level_page)
+        second_level_page_bottom = create_page('level22', "nav_playground.html", "en",
+                            created_by=admin, published=True, parent= self.reload(first_level_page))
+        third_level_page = create_page('level3', "nav_playground.html", "en",
+                            created_by=admin, published=True, parent= second_level_page_top)
+
+        url = reverse('admin:cms_%s_changelist' % Page._meta.module_name)
+        client = Client()
+        client.login(username='admin', password='admin')
+        client.cookies['djangocms_nodes_open'] = 'page_1%2Cpage_2'
+        response = client.get(url)
+        self.assertEquals(response.status_code, 200)
+        self.assertEquals(response.context["open_menu_trees"], [1,2])
+        # tests descendants method for the lazy load ajax call
+        url = "%s%d/descendants/" % (url, first_level_page.pk)
+        response = client.get(url)
+        self.assertEquals(response.status_code, 200)
+        # should include both direct descendant pages
+        self.assertTrue('id="page_2"' in response.content)
+        self.assertTrue('id="page_3"' in response.content)
+        # but not any further down the tree
+        self.assertFalse('id="page_4"' in response.content)
 
 
 class AdminFieldsetTests(TestCase):

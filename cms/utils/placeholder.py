@@ -28,11 +28,12 @@ def get_placeholder_conf(setting, placeholder, template=None, default=None):
     return default
 
 def get_page_from_placeholder_if_exists(placeholder):
-    from cms.models.pagemodel import Page
-    try:
-        return Page.objects.get(placeholders=placeholder)
-    except (Page.DoesNotExist, MultipleObjectsReturned,):
-        return None
+    import warnings
+    warnings.warn(
+        "The get_page_from_placeholder_if_exists function is deprecated. Use placeholder.page instead",
+        DeprecationWarning
+    )
+    return placeholder.page if placeholder else None
 
 def validate_placeholder_name(name):
     try:
@@ -75,9 +76,9 @@ class MLNGPlaceholderActions(PlaceholderNoAction):
     def get_copy_languages(self, placeholder, model, fieldname, **kwargs):
         manager = model.objects
         src = manager.get(**{fieldname: placeholder})
-        q = Q(master=src.master)
-        q &= Q(**{'%s__cmsplugin__isnull' % fieldname: False})
-        q &= ~Q(pk=src.pk)
+        query = Q(master=src.master)
+        query &= Q(**{'%s__cmsplugin__isnull' % fieldname: False})
+        query &= ~Q(pk=src.pk)
         
-        language_codes = manager.filter(q).values_list('language_code', flat=True).distinct()
+        language_codes = manager.filter(query).values_list('language_code', flat=True).distinct()
         return [(lc, dict(settings.LANGUAGES)[lc]) for lc in language_codes]

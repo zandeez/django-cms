@@ -32,7 +32,7 @@ You might consider using `django-filer`_ with `django CMS plugin`_ and its
 
 .. warning::
 
-    The builtin file plugin does only work with local storages. If you need
+    The builtin file plugin only works with local storages. If you need
     more advanced solutions, please look at alternative file plugins for the
     django CMS, such as `django-filer`_.
 
@@ -68,6 +68,20 @@ GoogleMap
 
 Displays a map of an address on your page.
 
+Both address and coordinates are supported to center the map; zoom level and
+route planner can be set when adding/editing plugin in the admin.
+
+.. versionadded:: 2.3.2
+    width/height parameter has been added, so it's no longer required to set
+    plugin container size in CSS or template.
+
+.. versionchanged:: 2.3.2
+    Zoom level is set via a select field which ensure only legal values are used.
+
+.. note:: Due to the above change, `level` field is now marked as `NOT NULL`,
+    and a datamigration has been introduced to modify existing googlemap plugin
+    instance to set the default value if `level` if is `NULL`.
+
 For installation be sure you have the following in the :setting:`django:INSTALLED_APPS`
 setting in your project's ``settings.py`` file::
 
@@ -76,6 +90,7 @@ setting in your project's ``settings.py`` file::
         'cms.plugins.googlemap',
         # ...
     )
+
 
 .. :module:: cms.plugins.link
 
@@ -97,7 +112,7 @@ setting in your project's ``settings.py`` file::
         # ...
     )
 
-.. note:: As of version 2.2, the link plugin no longer verifies the existance of
+.. note:: As of version 2.2, the link plugin no longer verifies the existence of
           link targets.
 
 
@@ -125,21 +140,22 @@ resize your pictures, you can find some on `Django Packages`_ and compare them
 there.
 
 In your project template directory create a folder called ``cms/plugins`` and
-create a file called ``picture.html`` in there. Here is an example
+in it create a file called ``picture.html``. Here is an example
 ``picture.html`` template using `easy-thumbnails`_:
 
 .. code-block:: html+django
 
     {% load thumbnail %}
 
-    {% if picture.url %}<a href="{{ picture.url }}">{% endif %}
-    {% ifequal placeholder "content" %}
+    {% if link %}<a href="{{ link }}">{% endif %}
+    {% if placeholder == "content" %}
         <img src="{% thumbnail picture.image 300x600 %}"{% if picture.alt %} alt="{{ picture.alt }}"{% endif %} />
-    {% endifequal %}
-    {% ifequal placeholder "teaser" %}
-        <img src="{% thumbnail picture.image 150x150 %}"{% if picture.alt %} alt="{{ picture.alt }}"{% endif %} />
-    {% endifequal %}
-    {% if picture.url %}</a>{% endif %}
+    {% else %}
+        {% if placeholder == "teaser" %}
+            <img src="{% thumbnail picture.image 150x150 %}"{% if picture.alt %} alt="{{ picture.alt }}"{% endif %} />
+        {% endif %}
+    {% endif %}
+    {% if link %}</a>{% endif %}
 
 
 In this template the picture is scaled differently based on which placeholder
@@ -150,7 +166,8 @@ You should take care that the directory defined by the configuration setting
 :setting:`django:MEDIA_ROOT`) is writable by the user under which django will be
 running.
 
-
+.. note:: In order to improve clarity, some Picture fields have been omitted in
+          the example template code.
 
 .. note:: For more advanced use cases where you would like to upload your media
           to a central location, consider using  `django-filer`_ with
@@ -170,7 +187,7 @@ running.
 Snippet
 *******
 
-Renders a HTML snippet from a HTML file in your templates directories or a
+Renders an HTML snippet from an HTML file in your templates directories or a
 snippet given via direct input.
 
 For installation be sure you have the following in the :setting:`django:INSTALLED_APPS`
@@ -274,7 +291,7 @@ Video
 *****
 
 Plays Video Files or Youtube / Vimeo Videos. Uses the `OSFlashVideoPlayer
-<http://github.com/FlashJunior/OSFlashVideoPlayer>`_. If you upload a file use
+<http://github.com/FlashJunior/OSFlashVideoPlayer>`_. When uploading videos use either
 .flv files or h264 encoded video files.
 
 For installation be sure you have the following in your project's
@@ -326,7 +343,7 @@ running.
 Twitter
 *******
 
-Displays the last number of post of a twitter user.
+Display's a number of a twitter user's latest posts.
 
 For installation be sure you have the following in your project's
 :setting:`django:INSTALLED_APPS` setting::
@@ -348,8 +365,8 @@ For installation be sure you have the following in your project's
 Inherit
 *******
 
-Displays all plugins of another page or another language. Great if you need
-always the same plugins on a lot of pages.
+Displays all plugins of another page or another language. Great if you always
+need the same plugins on a lot of pages.
 
 For installation be sure you have the following in your project's
 :setting:`django:INSTALLED_APPS` setting::
@@ -360,8 +377,8 @@ For installation be sure you have the following in your project's
         # ...
     )
 
-.. warning:: The inherit plugin is currently the only core-plugin which can
-             **not** be used in non-cms placeholders.
+.. warning:: The inherit plugin is currently the only core-plugin which
+             **cannot** be used in non-cms placeholders.
 
 .. _Django Packages: http://djangopackages.com/grids/g/thumbnails/
 .. _easy-thumbnails: https://github.com/SmileyChris/easy-thumbnails
